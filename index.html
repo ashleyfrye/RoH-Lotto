@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Friend Lotto</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input[type="number"] { width: 60px; margin-right: 5px; }
+    button { margin-top: 10px; }
+    .entry, .winner { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎉 RoH WoW Lotto Jackpot Currently $19,450 </h1>
+  <form id="lotto-form">
+    <label>Name: <input type="text" id="name" required /></label><br /><br />
+    <label>Pick 5 numbers (1-50):</label><br />
+    <input type="number" min="1" max="50" required />
+    <input type="number" min="1" max="50" required />
+    <input type="number" min="1" max="50" required />
+    <input type="number" min="1" max="50" required />
+    <input type="number" min="1" max="50" required /><br />
+    <button type="submit">Submit</button>
+  </form>
+
+  <h2>📋 Entries</h2>
+  <div id="entries"></div>
+
+  <h2>🎯 Draw Winning Numbers</h2>
+  <button onclick="drawNumbers()">Draw Numbers</button>
+  <div id="winners"></div>
+
+  <script>
+    const form = document.getElementById('lotto-form');
+    const entriesDiv = document.getElementById('entries');
+    const winnersDiv = document.getElementById('winners');
+    const entries = [];
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const numbers = Array.from(form.querySelectorAll('input[type="number"]'))
+        .map(input => parseInt(input.value))
+        .filter(n => !isNaN(n));
+
+      if (new Set(numbers).size !== 5) {
+        alert("Pick 5 unique numbers!");
+        return;
+      }
+
+      entries.push({ name, numbers });
+      updateEntries();
+      form.reset();
+    });
+
+    function updateEntries() {
+      entriesDiv.innerHTML = entries.map(e => 
+        `<div class="entry"><strong>${e.name}</strong>: ${e.numbers.join(', ')}</div>`
+      ).join('');
+    }
+
+    function drawNumbers() {
+      const drawn = new Set();
+      while (drawn.size < 5) {
+        drawn.add(Math.floor(Math.random() * 50) + 1);
+      }
+      const winning = Array.from(drawn);
+
+      winnersDiv.innerHTML = `<div><strong>Winning Numbers:</strong> ${winning.join(', ')}</div><br />`;
+      entries.forEach(entry => {
+        const matchCount = entry.numbers.filter(n => winning.includes(n)).length;
+        winnersDiv.innerHTML += `<div class="winner">${entry.name} matched ${matchCount} number(s)</div>`;
+      });
+    }
+  </script>
+</body>
+</html>
