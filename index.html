@@ -25,7 +25,7 @@
   </form>
 
   <h2>📋 Entries</h2>
-  <div id="entries"></div>
+  <div id="entries">Loading entries...</div>
 
   <h2>🎯 Draw Winning Numbers</h2>
   <button onclick="drawNumbers()">Draw Numbers</button>
@@ -35,38 +35,51 @@
     const form = document.getElementById('lotto-form');
     const entriesDiv = document.getElementById('entries');
     const winnersDiv = document.getElementById('winners');
-    const entries = [];
+    const GOOGLE_SHEET_JSON_URL = 'PASTE_YOUR_JSON_FEED_URL_HERE';
 
     form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const name = document.getElementById('name').value;
-  const numbers = Array.from(form.querySelectorAll('input[type="number"]'))
-    .map(input => parseInt(input.value))
-    .filter(n => !isNaN(n));
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const numbers = Array.from(form.querySelectorAll('input[type="number"]'))
+        .map(input => parseInt(input.value))
+        .filter(n => !isNaN(n));
 
-  if (new Set(numbers).size !== 5) {
-    alert("Pick 5 unique numbers!");
-    return;
-  }
+      if (new Set(numbers).size !== 5) {
+        alert("Pick 5 unique numbers!");
+        return;
+      }
 
-  fetch('https://script.google.com/macros/s/AKfycbyprFs-zpLHGtusIHKseYP4UrYNk7dbT25T1rschtmCJb1ZqveSFk-FA9iFDhmo7F9Leg/exec', {
-    method: 'POST',
-    body: JSON.stringify({ name, numbers }),
-    headers: { 'Content-Type': 'application/json' }
-  }).then(() => {
-    alert("Entry submitted!");
-    form.reset();
-  }).catch(err => {
-    alert("Error submitting entry.");
-    console.error(err);
-  });
-});
+      fetch('PASTE_YOUR_WEB_APP_URL_HERE', {
+        method: 'POST',
+        body: JSON.stringify({ name, numbers }),
+        headers: { 'Content-Type': 'application/json' }
+      }).then(() => {
+        alert("Entry submitted!");
+        form.reset();
+        loadEntries();
+      }).catch(err => {
+        alert("Error submitting entry.");
+        console.error(err);
+      });
+    });
 
+    function loadEntries() {
+      fetch(GOOGLE_SHEET_JSON_URL)
+        .then(response => response.json())
+        .then(data => {
+          const entries = data.entries.map(row => {
+            return {
+              name: row.name,
+              numbers: [row.num1, row.num2, row.num3, row.num4, row.num5].map(Number)
+            };
+          });
 
-    function updateEntries() {
-      entriesDiv.innerHTML = entries.map(e => 
-        `<div class="entry"><strong>${e.name}</strong>: ${e.numbers.join(', ')}</div>`
-      ).join('');
+          entriesDiv.innerHTML = entries.map(e => 
+            `<div class="entry"><strong>${e.name}</strong>: ${e.numbers.join(', ')}</div>`
+          ).join('');
+
+          window.allEntries = entries; // Save globally for drawing
+        });
     }
 
     function drawNumbers() {
@@ -77,11 +90,14 @@
       const winning = Array.from(drawn);
 
       winnersDiv.innerHTML = `<div><strong>Winning Numbers:</strong> ${winning.join(', ')}</div><br />`;
+      const entries = window.allEntries || [];
       entries.forEach(entry => {
         const matchCount = entry.numbers.filter(n => winning.includes(n)).length;
         winnersDiv.innerHTML += `<div class="winner">${entry.name} matched ${matchCount} number(s)</div>`;
       });
     }
+
+    loadEntries();
   </script>
 </body>
 </html>
