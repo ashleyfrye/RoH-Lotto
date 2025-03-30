@@ -9,6 +9,7 @@
     input[type="number"] { width: 60px; margin-right: 5px; }
     button { margin-top: 10px; }
     .entry, .winner { margin-bottom: 10px; }
+    textarea { width: 100%; height: 120px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -24,8 +25,12 @@
     <button type="submit">Submit</button>
   </form>
 
+  <h3>⬇️ Or paste CSV (name,num1,num2,num3,num4,num5)</h3>
+  <textarea id="csv-input" placeholder="Example: Jane,5,12,23,34,45\nBob,1,2,3,4,5"></textarea><br />
+  <button onclick="importCSV()">Import CSV</button>
+
   <h2>📋 Entries</h2>
-  <div id="entries">Loading entries...</div>
+  <div id="entries"></div>
 
   <h2>🎯 Draw Winning Numbers</h2>
   <button onclick="drawNumbers()">Draw Numbers</button>
@@ -35,7 +40,7 @@
     const form = document.getElementById('lotto-form');
     const entriesDiv = document.getElementById('entries');
     const winnersDiv = document.getElementById('winners');
-    const GOOGLE_SHEET_JSON_URL = 'PASTE_YOUR_JSON_FEED_URL_HERE';
+    const entries = [];
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -49,37 +54,32 @@
         return;
       }
 
-      fetch('PASTE_YOUR_WEB_APP_URL_HERE', {
-        method: 'POST',
-        body: JSON.stringify({ name, numbers }),
-        headers: { 'Content-Type': 'application/json' }
-      }).then(() => {
-        alert("Entry submitted!");
-        form.reset();
-        loadEntries();
-      }).catch(err => {
-        alert("Error submitting entry.");
-        console.error(err);
-      });
+      entries.push({ name, numbers });
+      updateEntries();
+      form.reset();
     });
 
-    function loadEntries() {
-      fetch(GOOGLE_SHEET_JSON_URL)
-        .then(response => response.json())
-        .then(data => {
-          const entries = data.entries.map(row => {
-            return {
-              name: row.name,
-              numbers: [row.num1, row.num2, row.num3, row.num4, row.num5].map(Number)
-            };
-          });
+    function importCSV() {
+      const text = document.getElementById('csv-input').value.trim();
+      const lines = text.split('\n');
+      lines.forEach(line => {
+        const parts = line.split(',');
+        if (parts.length === 6) {
+          const name = parts[0].trim();
+          const numbers = parts.slice(1).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+          if (new Set(numbers).size === 5) {
+            entries.push({ name, numbers });
+          }
+        }
+      });
+      updateEntries();
+      document.getElementById('csv-input').value = '';
+    }
 
-          entriesDiv.innerHTML = entries.map(e => 
-            `<div class="entry"><strong>${e.name}</strong>: ${e.numbers.join(', ')}</div>`
-          ).join('');
-
-          window.allEntries = entries; // Save globally for drawing
-        });
+    function updateEntries() {
+      entriesDiv.innerHTML = entries.map(e => 
+        `<div class="entry"><strong>${e.name}</strong>: ${e.numbers.join(', ')}</div>`
+      ).join('');
     }
 
     function drawNumbers() {
@@ -90,14 +90,11 @@
       const winning = Array.from(drawn);
 
       winnersDiv.innerHTML = `<div><strong>Winning Numbers:</strong> ${winning.join(', ')}</div><br />`;
-      const entries = window.allEntries || [];
       entries.forEach(entry => {
         const matchCount = entry.numbers.filter(n => winning.includes(n)).length;
         winnersDiv.innerHTML += `<div class="winner">${entry.name} matched ${matchCount} number(s)</div>`;
       });
     }
-
-    loadEntries();
   </script>
 </body>
 </html>
